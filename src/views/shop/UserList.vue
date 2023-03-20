@@ -15,6 +15,7 @@
                     <td>{{ item.mb_email }}</td>
                     <td  @dblclick="levleChange(item)"><u>{{ item.mb_level }}</u></td>
                     <td>{{ item.chkpw }}</td>
+                    <td @dblclick="use_delete(item)"><u>삭제</u> </td>
                 </tr>
             </template>
 
@@ -25,6 +26,7 @@
 </template>
 
 <script>
+import { id } from '../../../util/validateRules';
 export default {
     name :"UserList",
 	title : "사용자정보",
@@ -37,6 +39,7 @@ export default {
                 { text: 'email',  value: 'mb_email', sortable: true},
                 { text: '등급',  value: 'mb_level', sortable: true},
                 { text: '비빌먼호',  value: 'chkpw', sortable: false},
+                { text: '사용자삭제', value: 'f_del', sortable: false},
                 // { text: '업체명',  value: 'mb_login_at', sortable: false},
             ],
             items: [],
@@ -71,7 +74,20 @@ export default {
                     item.mb_level = lev;
                 }
             }
-        }
+        },
+        async use_delete(item) {
+             const res = await this.$ezNotify.confirm(`${item.mb_name} 삭제 하시겠습니까 ?`, '회사삭제');
+             if(res) {
+                const data = await this.$axios.patch(`/api/shopinfo/patchShopUserDelete?mb_id=${item.mb_id}&mb_level=${item.mb_level}`);
+                if (data.affectedRows === 1) {
+                    await this.$ezNotify.confirm("삭제 완료 !!!!!!", "");
+                    const idx = this.items.indexOf(item);
+                    if (idx) {
+                        this.items.splice(idx, 1);
+                    }
+                }
+            }
+        },
     }
 }
 </script>

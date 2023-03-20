@@ -13,6 +13,10 @@ router.patch('/patchShopUserList', async (req, res)=> {
 	const result = await modelCall(shopinfoModel.patchShopUserList, req);
 	res.json(result);
 }),
+router.patch('/patchShopUserDelete', async (req, res)=> {	
+	const result = await modelCall(shopinfoModel.patchShopUserDelete, req);
+	res.json(result);
+}),
 
 router.get('/getShopMag', async (req, res)=> {	
 	const result = await modelCall(shopinfoModel.getShopMag, req);

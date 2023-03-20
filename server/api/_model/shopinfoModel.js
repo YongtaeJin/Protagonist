@@ -24,7 +24,7 @@ const shopinfoModel = {
 		if (!isGrant(req, LV.VIP)) {
 			throw new Error('사용 권한이 없습니다.');
 		}
-		const sql = "select mb_id, mb_name, mb_phone, mb_email, if(mb_level=2,'일반', '관리자') mb_level, chkpw, mb_login_at  " +
+		const sql = "select mb_id, mb_name, mb_phone, mb_email, if(mb_level=2,'일반', '관리자') mb_level, chkpw, mb_login_at, 'N' f_del  " +
 				    "  from member " +
 	   			    " where not exists (select * from tb_notuserchk t where member.mb_id = t.mb_id) " +
 					"   and (mb_id like '%" + f_serarch + "%' or mb_name like '%" + f_serarch + "%' or mb_email like '%" + f_serarch + "%')" +
@@ -43,6 +43,32 @@ const shopinfoModel = {
 		const [row] = await db.execute(sql);
 	
        	return row;		
+	},
+	async patchShopUserDelete(req) {
+		const {mb_id, mb_level} = req.query;
+		// 권한 확인
+		if (!isGrant(req, LV.VIP)) {
+			throw new Error('사용 권한이 없습니다.');
+		}		
+		
+		let sql2 = "select i_no " +
+				   "  from tb_shopinput " +
+				   " where i_userid = '" + mb_id + "' " + 
+				   " and i_shop = '23-001' ";
+		const [[data]] = await db.execute(sql2);
+				
+		if (data) {		
+			const {i_no} = data;
+			sql2 = "delete from tb_shopinput_file where i_shop = '23-001' and i_no = " + i_no;
+			let [data2] = await db.execute(sql2);
+		}
+		sql2 = "delete from tb_shopinput where i_userid = '" + mb_id + "' and i_shop = '23-001' ";
+		[data2] = await db.execute(sql2);
+
+		const sql = "delete from member where mb_id = '" + mb_id + "'";		
+		const [row] = await db.execute(sql);
+		
+		return row;		
 	},
 	// 사업LIST
 	async getShopMag(req) {
