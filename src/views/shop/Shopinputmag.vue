@@ -242,7 +242,7 @@ export default {
         async saveDocProcess(item) {
             for (let ob in item) {
                 if(item[ob].f_edit) {
-                    console.log(item[ob]);
+                    // console.log(item[ob]);
                     const data = this.$axios.patch(`/api/shopinfo/ShopInputMag2Save?i_shop=${item[ob].i_shop}&i_no=${item[ob].i_no}&i_ser=${item[ob].i_ser}&f_noact=${item[ob].f_noact}`);
                 }
             }

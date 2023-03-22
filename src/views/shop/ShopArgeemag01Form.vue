@@ -4,7 +4,7 @@
         
         <v-toolbar background-color="primary" dark >
             <v-btn v-if="fileLists.length" @click="process" color="primary" >서류처리</v-btn>
-            <v-btn @click="mailSend" color="primary">메일발송</v-btn>
+            <v-btn v-if="fileLists.length" @click="mailSend" color="primary">메일발송</v-btn>
             <v-spacer></v-spacer>
 
             <v-checkbox v-if="fileLists.length" label="서류명" v-model="f_downchk2" hide-details color="primary" class="mx-4" />

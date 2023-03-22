@@ -12,7 +12,7 @@
         <v-btn class="green white--text" x-small  @click="editor.chain().focus().setColor('#B9F18D').run()" :class="{ 'is-active': editor.isActive('textStyle', { color: '#B9F18D' })}">노색</v-btn>
         <v-btn class="black white--text" x-small  @click="editor.chain().focus().setColor('#000000').run()" :class="{ 'is-active': editor.isActive('textStyle', { color: '#000000' })}">검정</v-btn>
         <v-btn class="white" x-small  @click="editor.chain().focus().setColor('#FFFFFF').run()" :class="{ 'is-active': editor.isActive('textStyle', { color: '#FFFFFF' })}">하얀</v-btn>
-        <v-btn @click="clickItem">보기</v-btn>
+        <!-- <v-btn @click="clickItem">보기</v-btn> -->
         <!-- Back Color :  -->
         <!-- <input
             type="color"

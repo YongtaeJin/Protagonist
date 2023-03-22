@@ -130,8 +130,7 @@ export default {
       this.html = this.editor.getHTML();      
 			this.$emit('onSend', this.mail_title, this.tomail, this.ccmail, this.html);      
     },
-    async getEmail(gubun) {      
-      console.log(this.itemInput);
+    async getEmail(gubun) {            
       let url = null;
       if (gubun == 'U') {
         url = `/api/shopinfo/shopgetEmail?i_userid=${this.itemInput.i_userid}&gubun=${gubun}`;
