@@ -71,19 +71,29 @@
             </v-card-text>
         </v-col>
     </v-row>
-
+    <tiptab-mail label="메일발송" 
+        :body_content= "this.form.body" 
+        :mail_title = "this.form.title"
+        :itemInput = "this.itemInput"
+        ref="dialog" max-width="900" max-height="1300"  persistent @onSend="sendMail">
+    </tiptab-mail>
+    
     </v-container>
 </template>
 
 <script>
 import { deepCopy } from "../../../util/lib";
+import { mapActions, mapGetters, mapMutations } from "vuex";
 import Shopinputmag03Form from './Shopinputmag03Form.vue';
+import { date } from '../../../util/validateRules';
+import TiptabMail from '../../components/tiptab/TiptabMail.vue';
+
 export default {
-  components: { Shopinputmag03Form },
+  components: { Shopinputmag03Form, TiptabMail, },
     name :"ShopInputMag",
 	title : "사업신청관리",
     data() {
-        return {
+        return {            
             tabs: parseInt(this.$route.query.tabs) || 0 ,
             isLoading: false,
             headers: [
@@ -114,7 +124,7 @@ export default {
             },
             fileHeaders: [
                 { text: '순번',           value: 'i_ser', sortable: false, align:'center', width: "55px"},
-                { text: '필수여부',       value: 'f_yn', sortable: false, align:'center', width: "75px"},
+                { text: '필수여부',       value: 'f_yn', sortable: false, align:'center', width: "80px"},
                 { text: '신청(추가)서류', value: 'n_filename', sortable: false, align:'center'}, 
                 { text: '첨부파일명',     value: 'n_file', sortable: false, align:'center'},
                 { text: '위치',           value: 't_att', sortable: false, align:' d-none', width: "98px"},           
@@ -132,10 +142,17 @@ export default {
             chkf_dochk : "%",
             chkf_enara : "%",
             chkf_serarch : "",
+            form: {
+                title: "",
+                to_email: "",
+                cc_email: "",
+                body: "",
+            },
+            mailBody: "",
         }
     },
     mounted() {     
-        window.addEventListener('beforeunload', this.leave)
+        window.addEventListener('beforeunload', this.leave);
     },
     
     beforeUnmount() {
@@ -145,7 +162,12 @@ export default {
     created() {
         this.fetchData() ;
     },
+    watch : {
+        
+    },
     methods: {
+        ...mapActions("shop", ["shopEmailSend"]),    
+        // ...mapActions("shop", ["duplicateCheckShop", "shopInfoSave", "shopAddFile", "shopAddFileDelete"]),    
         leave(event) {
 		    event.preventDefault();
 		    event.returnValue = '';
@@ -190,6 +212,7 @@ export default {
                 this.fileAddsB =  await this.$axios.get(`/api/shopinfo/getShopInputMag2?i_shop=${ item.i_shop }&i_no=${ item.i_no }&f_gubun=2`);
                 this.isLoading = false;
             }
+            this.form.body = "";
 
         },
         async f_dochk(item) {
@@ -200,7 +223,7 @@ export default {
                 } else {
                     item.f_dochk  = 'Y' ;
                 }
-                console.log(item)
+                // console.log(item)
                 // const data = await this.$axios.patch(`/api/shopinfo/getShopInputMag?i_shop=${item.i_shop}&i_no=${item.i_no}&f_dochk=${item.f_dochk}&f_enarachk=${item.f_enarachk}`);
                 const data = await this.$axios.patch(`/api/shopinfo/getShopInputMag?i_shop=${item.i_shop}&i_no=${item.i_no}&f_dochk=${item.f_dochk}`);               
             }             
@@ -224,15 +247,71 @@ export default {
                 }
             }
         },
-        async mailSend() {
-            const res = await this.$ezNotify.confirm("서류처리 내역 메일 발송 하시 겠습니까 ?.", "메일발송");
-            if (res) {
-                const data = await this.$axios.get(`/api/shopinfo/getShopDocChkMail?i_shop=${this.itemInput.i_shop}&i_no=${this.itemInput.i_no}&f_gubun=${this.tabs}`);
-                if(data == "ok") {
-                    await this.$ezNotify.alert("서류처리 내역 메일 발송 하였습니다..", "");
-                }
+
+        async mailSend() {         
+            // 메일 팝업차 뛰우기 --> sendMail 호출
+            let body = "<p>상기 제목 관련 하여 아래와 같이 첨부 서류 확인 결과 전달 드립니다.</p><p>";
+            if (this.tabs === 1) {
+                this.form.title = "스마트공방 신청 서류 확인 안내";
+                body = body + "공방 신청 서류</p>" + await this.makeBody(this.fileAdds);
+            } else if (this.tabs === 2) {
+                this.form.title = "스마트공방 추가 서류 확인 안내";
+                body = body + "공방 추가 서류</p>" + await this.makeBody(this.fileAddsB);
             }
-        }
+            this.form.body = body;
+            this.$refs.dialog.open();
+            // this.$refs.dialog.editor.setContent('<p>This is <strong>some</strong> inserted text. 👋</p>');
+            // const data = await this.$axios.get(`/api/shopinfo/getShopDocChkMail?i_shop=${this.itemInput.i_shop}&i_no=${this.itemInput.i_no}&f_gubun=${this.tabs}`);
+        },
+        async sendMail(title, tomail, ccmail, html) {
+            // 메일 작성 내용 저장 및 메일 발송
+            this.form.title = title;
+            this.form.to_email = tomail;
+            this.form.cc_email = ccmail;
+            this.form.body = html;
+            
+            const data = await this.shopEmailSend(this.form);
+            if (data == "ok") {
+                this.$ezNotify.alert("정상적으로 메일 발송 하였습니다..... ", "성공");
+                this.$refs.dialog.close();
+            }
+        },
+
+        async getmailBody(val) {
+            this.mailBody = val;
+        },
+        async getEmail(gubun) {
+            let url = "";
+            if (gubun == 'U') {
+                url = `/api/shopinfo/shopgetEmail?i_userid=${this.itemInput.i_userid}&gubun=${gubun}`;
+            } else if (gubun = 'S') {
+                url = `/api/shopinfo/shopgetEmail?i_shop=${this.itemInput.i_shop}&i_no=${this.itemInput.i_no}&gubun=${gubun}`;
+            } else if (gubun = 'M') {
+                url = `/api/shopinfo/shopgetEmail?&gubun=TOKEN`;
+            }            
+            const data = await this.$axios.get(url);            
+            if( data ) {                
+                this.form.to_email = data[0].to_email;
+            }
+            // 메일 참조자  (사용자 로그인)
+            const data2 = await this.$axios.get(`/api/shopinfo/shopgetEmail?&gubun=TOKEN`);            
+            if( data2 ) {                
+                this.form.cc_email = data2[0].to_email;
+            }
+        },
+        async makeBody(items) {
+            let body = ""
+            items.forEach((data) => {
+                let n_status = data.f_noact=='Y' ? "접수" : data.f_noact=='N' ? "반려" : data.f_noact=='I' ? '검토' : data.f_noact=='R' ? '검토' : '미등록';
+			    body = body + `<p>${data.f_noact=='Y'?'':'<span style="color:red"'}>${data.n_filename} : 서류${n_status}${data.f_noact=='Y'?'':'</span>'}</p>`;		        
+            });
+            body = body + `<p>반려된 첨부서류에 대해서 재 등록 부탁 드립니다.</p>`;
+		    body = body + `<p></p>감사 합니다.`
+
+           
+            return body;
+        },
+
     },
 }
 </script>
@@ -301,4 +380,6 @@ table.type03 td {
 .small-radio [class*="__ripple"] {
   left: 0;
 }
+
+
 </style>

@@ -3,13 +3,13 @@
         <!-- <v-data-table :headers="fileHeaders" :items="inputfilelist" class="mytable" @dblclick:row="downLoad"> -->
         
         <v-toolbar background-color="primary" dark >
-            <v-btn @click="process" color="primary" >서류처리</v-btn>
+            <v-btn v-if="fileLists.length" @click="process" color="primary" >서류처리</v-btn>
             <v-btn @click="mailSend" color="primary">메일발송</v-btn>
             <v-spacer></v-spacer>
 
-            <v-checkbox label="서류명" v-model="f_downchk2" hide-details color="primary" class="mx-4" />
+            <v-checkbox v-if="fileLists.length" label="서류명" v-model="f_downchk2" hide-details color="primary" class="mx-4" />
 
-            <v-btn color="primary" @click="alldownLoad">일과 내려받기</v-btn>
+            <v-btn v-if="fileLists.length"  color="primary" @click="alldownLoad">일과 내려받기</v-btn>
         </v-toolbar>
         
         <v-data-table :headers="fileHeaders" :items="inputfilelist" class="mytable">

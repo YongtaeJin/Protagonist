@@ -223,6 +223,10 @@ export default {
             this.$refs.dialog2.close();
         },
 
+        async onClose() {
+            console.l("onClose");
+        }
+
     }
 }
 </script>

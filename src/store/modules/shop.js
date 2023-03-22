@@ -26,6 +26,11 @@ export const actions = {
 		const data = await $axios.post(`/api/shopinfo/shopAddFileDelete`, form);
 		return data;
 	},
+	async shopEmailSend({ commit }, form) {		
+		const { $axios } = Vue.prototype;
+		const data = await $axios.post(`/api/shopinfo/postMailSend`, form);
+		return data;
+	},
 
 
 }

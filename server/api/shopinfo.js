@@ -130,5 +130,13 @@ router.get('/getShopDocChkMail', async (req, res)=> {
 	const result = await modelCall(shopinfoModel.getShopDocChkMail, req);
 	res.json(result);
 }),
+router.post('/postMailSend', async (req, res)=> {	
+	const result = await modelCall(shopinfoModel.postMailSend, req);
+	res.json(result);
+}),
+router.get('/shopgetEmail', async (req, res)=> {	
+	const result = await modelCall(shopinfoModel.shopgetEmail, req);
+	res.json(result);
+}),
 
 module.exports = router;

@@ -548,7 +548,7 @@ const shopinfoModel = {
 			throw new Error('사용 권한이 없습니다.');
 		}
 		const {i_shop, f_gubun, f_serarch, chkf_arfe } = req.query;
-		const sql = "select a.i_shop, a.i_no, trim(coalesce(a.n_company, a.i_userid)) n_company, a.f_argeechk, "+
+		const sql = "select a.i_shop, a.i_no, trim(coalesce(a.n_company, a.i_userid)) n_company, a.i_userid, a.f_argeechk, "+
 			  "			max(b.rnum) rnum, "+
 			  "			max(if(b.rnum = 1, b.n_nm, '')) h1, max(if(b.rnum = 2, b.n_nm, '')) h2, max(if(b.rnum = 3, b.n_nm, '')) h3, max(if(b.rnum = 4, b.n_nm, '')) h4, max(if(b.rnum = 5, b.n_nm, '')) h5, max(if(b.rnum = 6, b.n_nm, '')) h6, max(if(b.rnum = 7, b.n_nm, '')) h7, max(if(b.rnum = 8, b.n_nm, '')) h8, max(if(b.rnum = 9, b.n_nm, '')) h9, max(if(b.rnum = 10, b.n_nm, '')) h10, " +
 			  "			max(if(b.rnum = 11, b.n_nm, '')) h11, max(if(b.rnum = 12, b.n_nm, '')) h12, max(if(b.rnum = 13, b.n_nm, '')) h13, max(if(b.rnum = 14, b.n_nm, '')) h14, max(if(b.rnum = 15, b.n_nm, '')) h15, max(if(b.rnum = 16, b.n_nm, '')) h16, max(if(b.rnum = 17, b.n_nm, '')) h17, max(if(b.rnum = 18, b.n_nm, '')) h18, max(if(b.rnum = 19, b.n_nm, '')) h19, max(if(b.rnum = 20, b.n_nm, '')) h20, " +
@@ -606,7 +606,7 @@ const shopinfoModel = {
 			  " where a.i_shop  = '" + i_shop + "' " +
 			  "   and a.f_gubun = '" + f_gubun + "' " +
 			  " order by a.i_sort ";
-		
+				
 		const [rows] = await db.execute(sql);
 		let body = "<p>상기 제목 관련 하여 아래와 같이 첨부 서류 확인 결과 전달 드립니다.</p>";
 
@@ -627,16 +627,62 @@ const shopinfoModel = {
 		});
 		body = body + `<p>반려된 첨부서류에 대해서 재 등록 부탁 드립니다.</p>`;
 		body = body + `<p></p>.</p>감사 합니다.`
-		// if (!to_email) {
-		// 	return  { err: '이메일 주소 미확인 !!' }
-		// }
+		if (!to_email) {
+			console.log('이메일 주소 미확인 !!');
+			return  { err: '이메일 주소 미확인 !!' }
+		}
+		
 		try {
-			await sendMailer(`${title} 스마트공방 관리자`, to_email, '스마트공방 신청 서류 확인 안내', body);
+			// await sendMailer(`${title} 스마트공방 관리자`, to_email, '스마트공방 신청 서류 확인 안내', body);
+			await sendMailer(`스마트공방 관리자`, to_email, '', '스마트공방 신청 서류 확인 안내', body);			
 		} catch (e) {
 			console.log(e);
 			return { err: `email 발송에 필패 하였습니다.\n관리자에게 문의 주세요.` }
 		}
        	return 'ok';
 	},
+	async postMailSend(req) {	
+		
+		const title = 'Protagonist';
+		// const { to_email, cc_email, body } = req.query;		
+		const payload = {
+			...req.body,
+		};
+		try {		
+			const tb_mailsend = {
+				e_to: payload.to_email,
+				e_cc: payload.cc_email,
+				t_subject: payload.title,
+				t_content: payload.body,
+				d_crdt: moment().format('LT'),
+			}
+			await sendMailer(`스마트공방 관리자`, payload.to_email, payload.cc_email, payload.title, payload.body);
+			const smSql = sqlHelper.Insert('tb_mailsend', tb_mailsend);
+			await db.execute(smSql.query, smSql.values);
+			
+		} catch (e) {
+			console.log(e);
+			return { err: `email 발송에 필패 하였습니다.\n관리자에게 문의 주세요.` }
+		}
+       	return 'ok';
+	},
+	async shopgetEmail(req) {
+		const { gubun, i_shop, i_no, i_userid } = req.query;
+		let sql = "";
+		if (gubun == 'S') {
+			sql = "select i_email to_email from tb_shopinput where i_shop = '" + i_shop+ "' and i_no = " + i_no;
+		} else if (gubun == 'TOKEN') {
+			const token = req.cookies.token;
+			const { mb_id } = jwt.vetify(token);
+			sql = "select mb_email to_email from member where mb_id = '" + mb_id + "'";
+		} else {
+			sql = "select mb_email to_email from member where mb_id = '" + i_userid + "'";
+		}
+		
+		const [row] = await db.execute(sql);
+       	return row;	
+	},
+
+
 }
 module.exports = shopinfoModel;

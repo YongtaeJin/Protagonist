@@ -19,11 +19,12 @@ function sendMailer() {
 	return {
 		getInstance : function() {
 			if(instance == null) {
-				instance = async(from, to, subject, html) => {
+				instance = async(from, to, cc, subject, html) => {					
 					const info = await transPorter.sendMail({
 						// from : `"스마트공방 관리자" <${NODEMAILER_USER}>`,
 						from : `${from} <${NODEMAILER_USER}>`,
 						to,
+						cc,
 						subject,
 						html,
 					});

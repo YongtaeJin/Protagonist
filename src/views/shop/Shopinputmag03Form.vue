@@ -2,13 +2,13 @@
     <v-form  ref="form">
         <v-toolbar background-color="primary" dark >
             <!-- <v-toolbar-title>일괄 내려받기 : </v-toolbar-title> -->
-            <v-btn @click="process(form)" color="primary" >서류처리</v-btn>
-            <v-btn @click="mailSend" color="primary">메일발송</v-btn>
+            <v-btn v-if="fileLists.length" @click="process(form)" color="primary" >서류처리</v-btn>
+            <v-btn v-if="fileLists.length" @click="mailSend" color="primary">메일발송</v-btn>
             <v-spacer></v-spacer>
             <!-- <v-checkbox label="회사명" v-model="f_downchk1" hide-details color="primary"/> -->
-            <v-checkbox label="서류명" v-model="f_downchk2" hide-details color="primary" class="mx-4" />
+            <v-checkbox v-if="fileLists.length" label="서류명" v-model="f_downchk2" hide-details color="primary" class="mx-4" />
             <!-- <v-spacer></v-spacer> -->
-            <v-btn color="primary" @click="alldownLoad">일과 내려받기</v-btn>
+            <v-btn v-if="fileLists.length" color="primary" @click="alldownLoad">일과 내려받기</v-btn>
         </v-toolbar>
         
         <v-data-table :headers="fileHeaders" :items="form" class="mytable">
@@ -51,7 +51,7 @@ export default {
         return {
             fileHeaders : [
                 { text: '순번',           value: 'i_ser', sortable: false, align:'center', width: "55px"},
-                { text: '필수여부',       value: 'f_yn', sortable: false, align:'center', width: "75px"},
+                { text: '필수여부',       value: 'f_yn', sortable: false, align:'center', width: "80px"},
                 { text: '서류',           value: 'f_noact', sortable: false, align:'center', width: "55px"},
                 { text: '첨부서류',       value: 'n_filename', sortable: false, }, 
                 { text: '첨부파일명',     value: 'n_file', sortable: false, },

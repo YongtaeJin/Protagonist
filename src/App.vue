@@ -73,7 +73,7 @@ export default {
 <style>
 .mytable table th {
     /* background-color: lightgoldenrodyellow; */	
-	background-color: #D4f755;
+	background-color: #D4F755;
     border-bottom: none !important;
  }
  

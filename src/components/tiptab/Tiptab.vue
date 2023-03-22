@@ -3,21 +3,6 @@
     <menu-bar class="editor__header" :editor="editor" />
     <menu-color class="editor__header" :editor="editor" />
     <editor-content class="editor__content" :editor="editor" />
-    <!-- <div class="editor__footer">
-      <div :class="`editor__status editor__status--${status}`">
-        <template v-if="status === 'connected'">
-          {{ editor.storage.collaborationCursor.users.length }} user{{ editor.storage.collaborationCursor.users.length === 1 ? '' : 's' }} online in {{ room }}
-        </template>
-        <template v-else>
-          offline
-        </template>
-      </div>
-      <div class="editor__name">
-        <button @click="setName">
-          {{ currentUser.name }}
-        </button>
-      </div>
-    </div> -->
   </div>
 </template>
 
@@ -38,54 +23,76 @@ import { Editor, EditorContent } from '@tiptap/vue-2'
 import MenuBar from './MenuBar.vue'
 import MenuColor from './MenuColor.vue'
 
-export default {
-    
+export default {    
     components: {EditorContent, MenuBar, MenuColor,},
+    props: {
+      body_content: {
+        type: String,
+        default: null,
+      },
+      // mailBody : { 
+      //   type: String,
+      //   default: "",
+      // }
+    },
 
     data() {
         return {
-            editor: null,
-            
+            editor: null,   
+            html:"" ,
         }
     },
     mounted() {
-      // const ydoc = new Y.Doc()
-
       this.editor = new Editor({
+        content : this.body_content,                
         extensions: [
           StarterKit.configure({
-            history: true,
+            history: true,            
           }),
           Document,
           Paragraph,
           Text,
           TextStyle,
           Color,
-          // Heading,
-          // TextAlign.configure({
-          //   types: ['heading', 'paragraph'],                  
-          // }),
-          // Highlight,
-          Highlight.configure({ multicolor: true }),
+          TextAlign.configure({
+            types: ['heading', 'paragraph'],                  
+          }),          
+          Highlight.configure({ multicolor: true },),
           TaskList,
-          TaskItem,
-          // Collaboration.configure({
-          //     document: ydoc,
-          // }),
-          // CollaborationCursor.configure({
-          //     provider: this.provider,
-          //     user: this.currentUser,
-          // }),
+          TaskItem,          
           CharacterCount.configure({
             limit: 10000,
-          }),            
+          }),          
         ],
+        onUpdate({ editor }) {
+           
+           this.$emit("input", editor.getHTML());
+           this.emitAfterOnUpdate = true;
+          // this.$emit("getmailBody", editor.getHTML())
+          
+        }
       })
     },
 
     beforeUnmount() {
       this.editor.destroy()
     },
+    
+    watch: {
+      body_content() {         
+        this.editor.commands.setContent(this.body_content);
+        // console.log(this.body_content);
+      },    
+      html() {
+        console.log(this.html);
+      }  
+      
+    },
+    methods: {
+      
+      
+    }
+
 }
 </script>
 

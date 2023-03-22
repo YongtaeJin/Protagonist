@@ -48,16 +48,25 @@
 
         </shop-argeemag-01-form>
     </ez-dialog>
+
+    <tiptab-mail label="메일발송" 
+        :body_content= "this.form.body" 
+        :mail_title = "this.form.title"
+        :itemInput = "this.fileItem"
+        ref="dialog2" max-width="900" max-height="1300"  persistent @onSend="sendMail">
+    </tiptab-mail>
     </v-container>
 
 </template>
 
 <script>
 import { deepCopy, extractNumber } from "../../../util/lib";
+import { mapActions, mapGetters, mapMutations } from "vuex";
 import EzDialog from '../../components/etc/EzDialog.vue';
 import ShopArgeemag01Form from './ShopArgeemag01Form.vue';
+import TiptabMail from '../../components/tiptab/TiptabMail.vue';
 export default {
-  components: { EzDialog, ShopArgeemag01Form },
+  components: { EzDialog, ShopArgeemag01Form, TiptabMail },
     name :"ShopArgeeMag",
 	title : "사업협약서관리",
     data() {
@@ -69,6 +78,12 @@ export default {
             rnum: null,   
             fileItem:[],
             n_company: null,
+            form: {
+                title: "",
+                to_email: "",
+                cc_email: "",
+                body: "",
+            },           
         }
     },
     created() {
@@ -83,6 +98,8 @@ export default {
         window.removeEventListener('beforeunload', this.leave)
     },
     methods: {
+        ...mapActions("shop", ["shopEmailSend"]),
+
         leave(event) {
 		    event.preventDefault();
 		    event.returnValue = '';
@@ -150,7 +167,7 @@ export default {
         },
         async showRowInfo(item) {
             this.n_company = item.n_company;
-            this.fileItem = deepCopy(item);            
+            this.fileItem = deepCopy(item);               
             this.$refs.dialog.open();
         },
         async saveDocProcess(item) {
@@ -161,16 +178,62 @@ export default {
             }
         },
         async mailSend(item) {
-            if (item) {
-                const res = await this.$ezNotify.confirm("서류처리 내역 메일 발송 하시 겠습니까 ?.", "메일발송");
-                if (res) {
-                    const data = await this.$axios.get(`/api/shopinfo/getShopDocChkMail?i_shop=${item[0].i_shop}&i_no=${item[0].i_no}&f_gubun=${item[0].f_gubun}`);
-                    if(data == "ok") {
-                        await this.$ezNotify.alert("서류처리 내역 메일 발송 하였습니다..", "");
-                    }
-                }
+            if (item) {                
+                // const res = await this.$ezNotify.confirm("서류처리 내역 메일 발송 하시 겠습니까 ?.", "메일발송");
+                this.form.title = "스마트공방 협약서 서류 확인 안내";
+                let body = "<p>상기 제목 관련 하여 아래와 같이 첨부 서류 확인 결과 전달 드립니다.</p><p>";
+                body = body + "공방 협약서 서류</p>"
+                item.forEach((data) => {
+                    let n_status = data.f_noact=='Y' ? "접수" : data.f_noact=='N' ? "반려" : data.f_noact=='I' ? '검토' : data.f_noact=='R' ? '검토' : '미등록';
+                    body = body + `<p>${data.f_noact=='Y'?'':'<span style="color:red"'}>${data.n_file} : 서류${n_status}${data.f_noact=='Y'?'':'</span>'}</p>`;		        
+                });
+                body = body + `<p>반려된 첨부서류에 대해서 재 등록 부탁 드립니다.</p>`;
+                body = body + `<p></p>감사 합니다.`;
+                
+                this.form.body = body;
+                
+                this.$refs.dialog2.open();
+                
+                // if (res) {
+                //     const data = await this.$axios.get(`/api/shopinfo/getShopDocChkMail?i_shop=${item[0].i_shop}&i_no=${item[0].i_no}&f_gubun=${item[0].f_gubun}`);
+                //     if(data == "ok") {
+                //         await this.$ezNotify.alert("서류처리 내역 메일 발송 하였습니다..", "");
+                //     }
+                // }
             }
-        }
+        },
+        async getEmail(gubun) {
+            let url = "";
+            if (gubun == 'U') {
+                url = `/api/shopinfo/shopgetEmail?i_userid=${this.itemInput.i_userid}&gubun=${gubun}`;
+            } else if (gubun = 'S') {
+                url = `/api/shopinfo/shopgetEmail?i_shop=${this.itemInput.i_shop}&i_no=${this.itemInput.i_no}&gubun=${gubun}`;
+            } else if (gubun = 'M') {
+                url = `/api/shopinfo/shopgetEmail?&gubun=TOKEN`;
+            }            
+            const data = await this.$axios.get(url);            
+            if( data ) {                
+                this.form.to_email = data[0].to_email;
+            }
+            // 메일 참조자  (사용자 로그인)
+            const data2 = await this.$axios.get(`/api/shopinfo/shopgetEmail?&gubun=TOKEN`);            
+            if( data2 ) {                
+                this.form.cc_email = data2[0].to_email;
+            }
+        },
+        async sendMail(title, tomail, ccmail, html) {
+            // 메일 작성 내용 저장 및 메일 발송
+            this.form.title = title;
+            this.form.to_email = tomail;
+            this.form.cc_email = ccmail;
+            this.form.body = html;
+            
+            const data = await this.shopEmailSend(this.form);
+            if (data == "ok") {
+                this.$ezNotify.alert("정상적으로 메일 발송 하였습니다..... ", "성공");
+                this.$refs.dialog2.close();
+            }
+        },
 
     },
     
