@@ -77,7 +77,9 @@
         :itemInput = "this.itemInput"
         ref="dialog" max-width="900" max-height="1300"  persistent @onSend="sendMail">
     </tiptab-mail>
-    
+
+    <ez-dialog-2 label="처리중" ref="ez_wait" max-width="200" persistent color="primary" ></ez-dialog-2>
+
     </v-container>
 </template>
 
@@ -87,9 +89,10 @@ import { mapActions, mapGetters, mapMutations } from "vuex";
 import Shopinputmag03Form from './Shopinputmag03Form.vue';
 import { date } from '../../../util/validateRules';
 import TiptabMail from '../../components/tiptab/TiptabMail.vue';
+import EzDialog2 from '../../components/etc/EzDialog2.vue';
 
 export default {
-  components: { Shopinputmag03Form, TiptabMail, },
+  components: { Shopinputmag03Form, TiptabMail, EzDialog2, },
     name :"ShopInputMag",
 	title : "사업신청관리",
     data() {
@@ -265,16 +268,18 @@ export default {
         },
         async sendMail(title, tomail, ccmail, html) {
             // 메일 작성 내용 저장 및 메일 발송
+            this.$refs.ez_wait.open();
             this.form.title = title;
             this.form.to_email = tomail;
             this.form.cc_email = ccmail;
             this.form.body = html;
             
             const data = await this.shopEmailSend(this.form);
+            this.$refs.ez_wait.close();
             if (data == "ok") {
                 this.$ezNotify.alert("정상적으로 메일 발송 하였습니다..... ", "성공");
                 this.$refs.dialog.close();
-            }
+            }            
         },
 
         async getmailBody(val) {

@@ -55,6 +55,9 @@
         :itemInput = "this.fileItem"
         ref="dialog2" max-width="900" max-height="1300"  persistent @onSend="sendMail">
     </tiptab-mail>
+
+    <ez-dialog-2 label="처리중" ref="ez_wait" max-width="200" persistent color="primary" ></ez-dialog-2>
+    
     </v-container>
 
 </template>
@@ -65,8 +68,9 @@ import { mapActions, mapGetters, mapMutations } from "vuex";
 import EzDialog from '../../components/etc/EzDialog.vue';
 import ShopArgeemag01Form from './ShopArgeemag01Form.vue';
 import TiptabMail from '../../components/tiptab/TiptabMail.vue';
+import EzDialog2 from '../../components/etc/EzDialog2.vue';
 export default {
-  components: { EzDialog, ShopArgeemag01Form, TiptabMail },
+  components: { EzDialog, ShopArgeemag01Form, TiptabMail, EzDialog2,  },
     name :"ShopArgeeMag",
 	title : "사업협약서관리",
     data() {
@@ -121,7 +125,7 @@ export default {
             this.fetchData();
             
         },
-        async fetchData() {
+        async fetchData() {            
             const head = {};
             this.headers.splice(0);
             head.text = "업체명";
@@ -152,7 +156,8 @@ export default {
                 head.sortable = false;
                 head.align = 'center';
                 this.headers.push( { ...head });
-            }        
+            }
+            //  this.$refs.ez_wait.close();
         },
         async f_argeechk(item) {
             const res = await this.$ezNotify.confirm("처리 하시겠습니까  ?", "협약서");
@@ -223,16 +228,19 @@ export default {
         },
         async sendMail(title, tomail, ccmail, html) {
             // 메일 작성 내용 저장 및 메일 발송
+            this.$refs.ez_wait.open();
             this.form.title = title;
             this.form.to_email = tomail;
             this.form.cc_email = ccmail;
             this.form.body = html;
             
             const data = await this.shopEmailSend(this.form);
+            this.$refs.ez_wait.close();
             if (data == "ok") {
                 this.$ezNotify.alert("정상적으로 메일 발송 하였습니다..... ", "성공");
                 this.$refs.dialog2.close();
             }
+            
         },
 
     },

@@ -4,27 +4,24 @@
       <v-toolbar>
         <v-toolbar-title>{{ label }}</v-toolbar-title>
         <v-spacer></v-spacer>
-        <v-spacer></v-spacer>
-        <v-spacer></v-spacer>
-        <v-spacer></v-spacer>
-        <v-spacer></v-spacer>
-        <v-btn @click="send">메일발송</v-btn>
-        <v-spacer></v-spacer>
-        <v-btn @click="close">닫기</v-btn>
-        <!-- <v-btn icon @click="close">
+        <v-btn icon @click="close">
           <v-icon>mdi-close</v-icon>
-        </v-btn> -->
+        </v-btn>
       </v-toolbar>
       <v-card-text>
         <slot></slot>
       </v-card-text>
+      
+      <ez-wait/>
     </v-card>
   </v-dialog>
 </template>
 
 <script>
+import EzWait from './EzWait.vue';
 export default {
-  name: "ezDialog",
+  components: { EzWait },
+  name: "ezDialog2",
   props: {
     label: {
       type: String,
@@ -44,11 +41,7 @@ export default {
     open() {
 			this.$emit('onOpen');
       this.dialog = true;
-    },
-    send() {
-			this.$emit('onSend');
-      // this.dialog = false;
-    },
+    },    
   },
 };
 </script>
