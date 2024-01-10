@@ -29,9 +29,12 @@ export const getters = {
 	isShopinfochk(state) {
 		for(let ob in state.shopinfo) {
 			// console.log(ob, state.shopinfo[ob]);
-			if (!state.shopinfo[ob]) { return 0 ;}
+			if (ob == 'f_persioninfo') {				
+				return state.shopinfo[ob] == '1' ? 1 : 0;
+			}
+			// if (!state.shopinfo[ob]) { return 0 ;}
 		}
-		return 1;
+		return 0;
 	}
 };
 export const actions = {

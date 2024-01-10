@@ -4,7 +4,7 @@
         <login />
     </v-card>
     <v-card v-else>
-        <v-toolbar>
+        <v-toolbar background-color="primary" dark>
             <v-toolbar-title>사업관리</v-toolbar-title>
             <v-spacer></v-spacer>
             <tooltip-btn v-if="this.tabs==0 &&  this.$store.state.user.member.mb_level >=9" fab small label="사업추가" @click="addShop">
@@ -23,10 +23,10 @@
         </v-tabs>
         <v-card-text>
             <v-tabs-items v-model="tabs"> 
-                <v-tab-item><shopmag-01-form @save="save2" :itemLists="this.itemShops" @edit="addShop" @select="selectRow"/></v-tab-item>                 
-                <v-tab-item><shopmag-02-form :addLists="this.fileAdds" @edit="addFile"/></v-tab-item>
-                <v-tab-item><shopmag-02-form :addLists="this.fileAddsB" @edit="addFile"/></v-tab-item>
-                <v-tab-item><shopmag-02-form :addLists="this.fileAddsC" @edit="addFile"/></v-tab-item>
+                <v-tab-item><shopmag-01-form @save="save2" :itemLists="this.itemShops" @edit="addShop" @select="selectRow" :iframeHeight="iframeHeight"/></v-tab-item>                 
+                <v-tab-item><shopmag-02-form :addLists="this.fileAdds" @edit="addFile" :iframeHeight="iframeHeight"/></v-tab-item>
+                <v-tab-item><shopmag-02-form :addLists="this.fileAddsB" @edit="addFile" :iframeHeight="iframeHeight"/></v-tab-item>
+                <v-tab-item><shopmag-02-form :addLists="this.fileAddsC" @edit="addFile" :iframeHeight="iframeHeight"/></v-tab-item>
 
             </v-tabs-items>            
         </v-card-text>
@@ -64,7 +64,8 @@ export default {
 	name :"ShopMag",
 	title : "사업관리",
     data() {
-        return {            
+        return {
+            iframeHeight: 500, // 초기 높이 설정 (원하는 높이로 초기화)
             tabs: parseInt(this.$route.query.tabs) || 0 ,
             isLoading: false,
             itemShops: [],
@@ -82,7 +83,10 @@ export default {
         }
         
     },
-    mounted() {        
+    mounted() {       
+        // 창 크기가 변경될 때마다 iframe의 높이를 조정
+        window.addEventListener('resize', this.adjustIframeHeight);
+        this.adjustIframeHeight(); // 초기 조정 
         if (this.$store.state.user.member ) {
             this.fetchData();
         }
@@ -90,6 +94,10 @@ export default {
     },
     beforeUnmount() {
         window.removeEventListener('beforeunload', this.leave)
+    },
+    beforeDestroy() {
+        // 컴포넌트가 파기될 때 리스너 제거
+        window.removeEventListener('resize', this.adjustIframeHeight);
     },
     watch: {
         async tabs() {
@@ -113,6 +121,11 @@ export default {
 		    event.preventDefault();
 		    event.returnValue = '';
 	    },
+        adjustIframeHeight() {
+        // 브라우저 창의 높이를 iframe의 높이로 설정
+            const windowHeight = window.innerHeight;
+            this.iframeHeight = windowHeight - 212;           
+        },
         getmaxno(flag) {
             //console.log("getmaxno", flag);
             this.maxno = 0;
@@ -143,8 +156,8 @@ export default {
         async fetchData() {
             this.itemShops = await this.$axios.get("/api/shopinfo/getShopMag");               
         },        
-        async addShop(item) {
-           if (item) {             
+        async addShop(item) {            
+            if (item) {             
                 this.isNew = false;                  
                 this.itemShop = deepCopy(item);
             } else {                
@@ -161,8 +174,9 @@ export default {
             return await this.duplicateCheckShop(payload);
         },
 
-        async selectRow(index, item) {
-            this.idx = index;           
+        async selectRow(item) {
+            const idx = this.itemShops.findIndex(e => e.i_shop == item.i_shop); 
+            this.idx = idx;
         },
 
         async save1(form) {
@@ -232,13 +246,5 @@ export default {
 </script>
 
 <style>
-.v-data-table > .v-data-table__wrapper > table > tbody > tr > th, .v-data-table > .v-data-table__wrapper > table > thead > tr > th, .v-data-table > .v-data-table__wrapper > table > tfoot > tr > th 
-{
-    font-size: 0.7rem;    
-    height: 35px;    
-}
-.v-data-table > .v-data-table__wrapper > table > tbody > tr > td, .v-data-table > .v-data-table__wrapper > table > thead > tr > td, .v-data-table > .v-data-table__wrapper > table > tfoot > tr > td {
-  font-size: 0.35rem;
-  height: 26px; 
-}
+
 </style>

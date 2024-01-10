@@ -31,6 +31,7 @@ router.post('/checkShopinfo', async (req, res)=> {
 	res.json(result);
 }),
 router.get('/', async (req, res)=> {	
+	console.log("get");
 	const result = await modelCall(shopinfoModel.checkShopinfo, req);
 	if ( result ) {
 		res.cookie('i_shop', result.i_shop, { httpOnly: true });
@@ -64,6 +65,10 @@ router.get('/duplicgateCheckShop/:field/:value', async (req, res)=> {
 	res.json(result);
 }),
 
+router.get('/getShopList', async (req, res)=> {	
+	const result = await modelCall(shopinfoModel.getShopList, req);
+	res.json(result);
+}),
 router.post('/shopInfoSave', async (req, res)=> {	
 	const result = await modelCall(shopinfoModel.shopInfoSave, req);
 	res.json(result);

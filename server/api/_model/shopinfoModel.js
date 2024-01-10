@@ -102,7 +102,7 @@ const shopinfoModel = {
     async checkShopinfo(req) {       
 		const sql1 = "select i_shop from tb_shopmag where  now() between d_date1 and d_date2";
     	const [[row]] = await db.execute(sql1);
-    	
+    	if (!row) return false;
 		const sql2 = "select a.i_shop, a.t_remark, a.t_remark2, i_no, ifnull(i_userid, '" + req.user.mb_id + "') i_userid, f_persioninfo, d_persioninfo, i_regno, n_company, n_person, t_tel1, t_tel2,  i_presno, i_email, i_post, t_addr1, t_addr2, f_saugup, f_run, f_dart, t_enarainfo, t_enarainfopw " +
   					 "	from tb_shopmag a " +
        				 "       left outer join tb_shopinput b on a.i_shop = b.i_shop and b.i_userid = '" + req.user.mb_id +"'" +
@@ -147,18 +147,19 @@ const shopinfoModel = {
 	async attfiles(req) {
 		const token = req.cookies.token;
 		const { mb_id } = jwt.vetify(req.cookies.token);
-		const i_shop = req.cookies.i_shop;
+		// const i_shop = req.cookies.i_shop;
 		const i_no = req.cookies.i_no;	
-		const { f_gubun } = req.query;
+		const { i_shop, f_gubun } = req.query;		
 		
 		sql = "select a.i_shop, a.i_ser, a.f_yn, a.n_file n_filename, " +
 			  "			c.i_no, null n_file, b.n_file n_file2, b.t_att, b.f_noact, a.t_remark, a.t_sample, a.t_filenm t_samplefile" +
 			  "  from tb_shopmag_file a " +
 			  "       left outer join tb_shopinput c on a.i_shop = c.i_shop and c.i_userid = '" + mb_id + "' " +
-			  "	      left outer join tb_shopinput_file b on a.i_shop = b.i_shop and a.i_ser = b.i_ser and c.i_no = b.i_no " +
+			  "	      left outer join tb_shopinput_file b on a.i_shop = b.i_shop and a.i_ser = b.i_ser and c.i_no = b.i_no " +			
 			  "	where a.i_shop = '" + i_shop + "' " +
 			  "   and a.f_gubun = '" + f_gubun + "'" +
-			  "	order by a.i_shop, a.i_ser ";		
+			  "	order by a.i_shop, a.i_ser ";
+			  
 		const [row] = await db.execute(sql);
 		return row;
 	},
@@ -356,7 +357,10 @@ const shopinfoModel = {
 		const [row] = await db.execute(sql);
 		return row;
 	},
-
+	async getShopList(req) {
+		const [row] = await db.execute(`select i_shop, n_shop from tb_shopmag order by i_shop desc`);		
+		return row;	
+	},
 	async getShopInputMag(req) {
 		// 권한 확인
 		if (!isGrant(req, LV.VIP)) {

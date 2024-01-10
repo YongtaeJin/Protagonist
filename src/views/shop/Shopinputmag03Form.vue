@@ -11,18 +11,18 @@
             <v-btn v-if="fileLists.length" color="primary" @click="alldownLoad">일과 내려받기</v-btn>
         </v-toolbar>
         
-        <v-data-table :headers="fileHeaders" :items="form" class="mytable">
+        <v-data-table :headers="fileHeaders" :items="form" :height="420" hide-default-footer :items-per-page="-1" >
             <template v-slot:item="{ item }">        
-                <tr>
-                    <td align=center> {{ item.i_ser }} </td>
-                    <td align=center :class="{redcol: item.f_yn==1, greencol: item.f_yn == 0}">{{f_ynchk(item.f_yn)}} </td>                    
-                    <td align=center @dblclick="docProcess(item)"
+                <tr :class="{ 'row_select': item === selected}" @click="selectItem(item)" class="center-align" >
+                    <td> {{ item.i_ser }} </td>
+                    <td :class="{redcol: item.f_yn==1, greencol: item.f_yn == 0}">{{f_ynchk(item.f_yn)}} </td>                    
+                    <td @dblclick="docProcess(item)"
                         :class="{redcol: item.f_noact=='N', greencol: item.f_noact == 'Y',  bluecol: item.f_noact == 'I' }" > 
                         <u>{{ f_noact(item.f_noact) }}</u>
                     </td>
-                    <td> {{ item.n_filename }} </td>
-                    <td> {{ item.n_file }} </td>
-                    <td align=center>
+                    <td align=left> {{ item.n_filename }} </td>
+                    <td align=left> {{ item.n_file }} </td>
+                    <td>
                         <v-btn v-if=item.t_att fab x-small  @click="downLoad(item)">
                         <v-icon dark>mdi-file-download</v-icon>
                         </v-btn>                
@@ -53,8 +53,8 @@ export default {
                 { text: '순번',           value: 'i_ser', sortable: false, align:'center', width: "55px"},
                 { text: '필수여부',       value: 'f_yn', sortable: false, align:'center', width: "80px"},
                 { text: '서류',           value: 'f_noact', sortable: false, align:'center', width: "55px"},
-                { text: '첨부서류',       value: 'n_filename', sortable: false, }, 
-                { text: '첨부파일명',     value: 'n_file', sortable: false, },
+                { text: '첨부서류',       value: 'n_filename', sortable: false, align:'center', }, 
+                { text: '첨부파일명',     value: 'n_file', sortable: false, align:'center', },
                 { text: 'DOWN',          value: 't_att', sortable: false, align:'center', width: "75px"}, 
                 
             ],
@@ -72,6 +72,7 @@ export default {
             },
             f_downchk1: 1,
             f_downchk2: 0,
+            selected: [],
         }
     },
     created() {       
@@ -105,6 +106,10 @@ export default {
         },
         async mailSend() {
             this.$emit("mailSend")            
+        },
+        selectItem(item) {
+            if (this.selected == item) return;
+            this.selected = item;
         },
 
         async downLoad(item) {

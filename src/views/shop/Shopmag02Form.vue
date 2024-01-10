@@ -1,15 +1,15 @@
 <template>
     <v-form @submit.prevent="save" ref="form" v-model="valid" lazy-validation @@submit.prevent="edit">
-        <v-data-table :headers="headers" :items="form" class="mytable" >
+        <v-data-table :headers="headers" :items="form" single-select  item-key="i_shop" :height=iframeHeight hide-default-footer :items-per-page="-1" >
             <template v-slot:item="{ item }">    
                 <!-- <tr @dblclick:row="showRowInfo" > -->
-                <tr @dblclick="showRowInfo(item)" >
+                <tr :class="{ 'row_select': item === selected}" @click="selectRow(item)" @dblclick="showRowInfo(item)" class="center-align" >
                     <td :class="{red2: item.f_gubun==1, green2: item.f_gubun == 2, blue2: item.f_gubun == 3}" > {{ f_gubunchk(item.f_gubun) }} </td>                     
-                    <td :class="{red2: item.f_gubun==1, green2: item.f_gubun == 2, blue2: item.f_gubun == 3}" align=center> {{ item.i_sort }} </td>
-                    <td :class="{red2: item.f_gubun==1, green2: item.f_gubun == 2, blue2: item.f_gubun == 3}" align=center> {{ item.n_nm }} </td>
-                    <td :class="{red2: item.f_yn==1, green2: item.f_yn == 0}"> {{ item.n_file }} </td>
-                    <td align=center :class="{red2: item.f_yn==1, green2: item.f_yn == 0}"> {{ f_ynchk(item.f_yn) }} </td>
-                    <td> {{ item.t_remark }} </td>
+                    <td :class="{red2: item.f_gubun==1, green2: item.f_gubun == 2, blue2: item.f_gubun == 3}" > {{ item.i_sort }} </td>
+                    <td align=left :class="{red2: item.f_gubun==1, green2: item.f_gubun == 2, blue2: item.f_gubun == 3}" > {{ item.n_nm }} </td>
+                    <td align=left :class="{red2: item.f_yn==1, green2: item.f_yn == 0}"> {{ item.n_file }} </td>
+                    <td :class="{red2: item.f_yn==1, green2: item.f_yn == 0}"> {{ f_ynchk(item.f_yn) }} </td>
+                    <td align=left> {{ item.t_remark }} </td>
                 </tr>
             </template>
         </v-data-table>
@@ -24,21 +24,19 @@ export default {
        addLists: {
             type: Array,
             default: null,
-        },        
+        },
+        iframeHeight: {type: Number, default: 500,}
     },
     data() {
         return {
             valid: true,            
-            headers: [
-                { text: '신청번호',  value: 'i_shop', sortable: false, width: "200px", fixed: true, align:'center', align:' d-none'},
-                { text: '구분', value: 'f_gubun', sortable: false, width: "60px", fixed: true},
-                { text: '순번', value: 'i_sort', sortable: false, width: "50px", fixed: true,  align:'center'},                
-                { text: '명칭', value: 'n_nm', sortable: false, width: "75px", fixed: true,  align:'center'},
-                { text: '첨부서류', value: 'n_file', sortable: false, width: "150px", fixed: true, align:'center'},
-                { text: '파일명', value: 't_filenm', sortable: false, width: "150px", fixed: true, align:'center', align:' d-none'},
+            headers: [                
+                { text: '구분', value: 'f_gubun', sortable: false, width: "50px", fixed: true, align:'center'},
+                { text: '순번', value: 'i_sort', sortable: false, width: "30px", fixed: true,  align:'center'},                
+                { text: '명칭', value: 'n_nm', sortable: false, width: "160px", fixed: true,  align:'center'},
+                { text: '첨부서류', value: 'n_file', sortable: false, width: "200px", fixed: true, align:'center'},
                 { text: '필수', value: 'f_yn', sortable: false, width: "50px", fixed: true, align:'center'}, 
-                { text: '비고', value: 't_remark', sortable: false, width:"45%"},
-                { text: '샘플', value: 't_sample', sortable: false, width:"35%", align:' d-none'},  
+                { text: '비고', value: 't_remark', sortable: false, align:'center'},                
             ],
             form: {
                 i_shop: "",
@@ -54,6 +52,7 @@ export default {
                 f_del: "",
                 
             },
+            selected: [],
         }
     },
      created() {
@@ -94,6 +93,10 @@ export default {
         async save() {
             // this.$emit("save");
         },
+        async selectRow( item ) {
+            if (this.selected == item) return;
+            this.selected = item;         
+        }
     }
 
 }

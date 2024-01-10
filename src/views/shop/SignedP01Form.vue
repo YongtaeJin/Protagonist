@@ -1,10 +1,12 @@
 <template>
   
-  <v-form @submit.prevent="save" ref="form">    
+  <v-form @submit.prevent="save" ref="form">        
       <v-checkbox v-model="form.f_persioninfo" 
         :disabled="!this.$store.state.user.shopinfo || this.$store.state.user.shopinfo.f_persioninfo=='1'"
         label="개인정보 수집 및 이용 동의함" color="success" value="1" hide-details></v-checkbox>    
-      
+        
+      <div class="right2-align"> 동의일자 : {{ this.$store.state.user.shopinfo?.d_persioninfo }}  </div>
+
       <v-btn 
         :disabled="!this.$store.state.user.shopinfo || this.$store.state.user.shopinfo.f_persioninfo=='1'"
         color="primary" type="submit" block>동의함</v-btn>       

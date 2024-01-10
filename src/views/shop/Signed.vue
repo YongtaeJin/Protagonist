@@ -1,30 +1,30 @@
 <template>
-    <v-card v-if="!this.$store.state.user.member"  width="100%" elevation="10">
+    <v-card v-if="!this.$store.state.user?.member"  width="100%" elevation="10">
         <login />
     </v-card>
     <v-card v-else>
-        <v-toolbar>
+        <v-toolbar background-color="primary" dark>
             <v-toolbar-title>스마트공방 사업신청</v-toolbar-title>
             <v-spacer></v-spacer>
         </v-toolbar>  
         
-            <v-card background-color="primary" dark>            
+        <v-card background-color="primary" >            
             <div v-text="memo" style="white-space:pre-line"></div>
-            </v-card>
+        </v-card>
         
         <v-tabs v-model="tabs" background-color="primary" dark>
             <v-tab value="tbapage_1" style="flex: 1" >개인정보 동의</v-tab>
-            <v-tab value="tbapage_2" style="flex: 1" :disabled="!this.$store.state.user.shopinfo || !this.$store.state.user.shopinfo.f_persioninfo=='1'">회사 정보</v-tab>
+            <v-tab value="tbapage_2" style="flex: 1" :disabled="!istab1">회사 정보</v-tab>
             <v-tab value="tbapage_3" style="flex: 1" :disabled="!this.istab2" >스마트공방 신청</v-tab>
-            <v-tab value="tbapage_4" style="flex: 1" :disabled="!this.istab3" >회사 추가 정보</v-tab>
+            <v-tab value="tbapage_4" style="flex: 1" :disabled="!this.istab3 || !this.istab2" >회사 추가 정보</v-tab>            
         </v-tabs>
         
         <v-card-text>
             <v-tabs-items v-model="tabs">                                 
                 <v-tab-item><signed-p-01-form @save="save1" /></v-tab-item>                
                 <v-tab-item><signed-p-02-form @save="save2" :item="this.$store.state.user.shopinfo"/></v-tab-item>
-                <v-tab-item><signed-p-03-form @save="save3" :attfile="this.shioinfofiles" /></v-tab-item>
-                <v-tab-item><signed-p-04-form @save="save4" :attfile="this.shopinfofileadds" /></v-tab-item>
+                <v-tab-item><signed-p-03-form @save="save3" :attfile="this.shioinfofiles" :iframeHeight="iframeHeight"/></v-tab-item>
+                <v-tab-item><signed-p-04-form @save="save4" :attfile="this.shopinfofileadds" :iframeHeight="iframeHeight"/></v-tab-item>
             </v-tabs-items>            
         </v-card-text>
       
@@ -47,7 +47,8 @@ export default {
 	name :"ShopSigned",
 	title : "스마트공방 신청",
     data() {
-        return {            
+        return {
+            iframeHeight: 500, // 초기 높이 설정 (원하는 높이로 초기화)
             tabs: parseInt(this.$route.query.tabs) || 0 ,
             // items: ["개인정보 동의", "회사 정보", "스마트공방 신청", "회사 추가 정보"],  
 
@@ -59,7 +60,7 @@ export default {
                 {id:'Addinfo', name:'회사 추가 정보', enable:'Y'},
             ],
             shioinfofiles: [],
-            shopinfofileadds: [],          
+            shopinfofileadds: [],                      
             istab2: false,  
             istab3: false,
             istab4: false,
@@ -67,11 +68,14 @@ export default {
             memo : "",
         }
     },
-    mounted() {        
+    mounted() {
+        // 창 크기가 변경될 때마다 iframe의 높이를 조정
+        window.addEventListener('resize', this.adjustIframeHeight);
+        this.adjustIframeHeight(); // 초기 조정 
         window.addEventListener('beforeunload', this.leave);
         if (this.$store.state.user.member ) {
-            this.fetchData();
-            if(this.$store.state.user.shopinfo.f_persioninfo) {
+            this.fetchData();            
+            if(this.$store.state.user.shopinfo?.f_persioninfo) {
                this.tabs = 1;
             } else {
                 this.tabs = 0;
@@ -82,11 +86,27 @@ export default {
     beforeUnmount() {
         window.removeEventListener('beforeunload', this.leave)
     },
+    beforeDestroy() {
+        // 컴포넌트가 파기될 때 리스너 제거
+        window.removeEventListener('resize', this.adjustIframeHeight);
+    },
+    computed: {
+        istab1() {
+            if (this.$store.state.user.shopinfo?.f_persioninfo == '1' ) {
+                return true;
+            } 
+            return false;
+        },
+    },
     methods: {
         ...mapActions("user", ["checkShopInfo", "updateShopInfo"]),        
         ...mapMutations("user", ["SET_SHOPINFO"]),
         ...mapGetters("user", ["isShopinfochk"]),
-
+        adjustIframeHeight() {
+        // 브라우저 창의 높이를 iframe의 높이로 설정
+            const windowHeight = window.innerHeight;
+            this.iframeHeight = windowHeight - 360;
+        },
         leave(event) {
 		    event.preventDefault();
 		    event.returnValue = '';
@@ -104,12 +124,13 @@ export default {
         },
 
         async fetchData() {       
-            const data = await this.checkShopInfo();            
-            this.shioinfofiles = await this.$axios.patch(`/api/shopinfo/attfiles?f_gubun=1`);
-            this.shopinfofileadds = await this.$axios.patch(`/api/shopinfo/attfiles?f_gubun=2`);
+            const data = await this.checkShopInfo();  
+            // console.log(this.$store.state.user.shopinfo?.i_shop)          
+            this.shioinfofiles = await this.$axios.patch(`/api/shopinfo/attfiles?i_shop=${this.$store.state.user.shopinfo?.i_shop}&f_gubun=1`);
+            this.shopinfofileadds = await this.$axios.patch(`/api/shopinfo/attfiles?i_shop=${this.$store.state.user.shopinfo?.i_shop}&f_gubun=2`);
             if (this.$store.state.user.shopinfo) { this.istab2 = await this.isShopinfochk(); }
             this.inputFileChk();
-            this.memo = this.$store.state.user.shopinfo.t_remark;
+            this.memo = this.$store.state.user.shopinfo?.t_remark;
         },        
         async save1(form) {
             if (!form.i_shop) {
@@ -118,8 +139,8 @@ export default {
             }           
             const data = await this.updateShopInfo(form);
             if ( data ) {                
-                this.shioinfofiles = await this.$axios.patch(`/api/shopinfo/attfiles?f_gubun=1`);
-                this.shopinfofileadds = await this.$axios.patch(`/api/shopinfo/attfiles?f_gubun=2`);
+                this.shioinfofiles = await this.$axios.patch(`/api/shopinfo/attfiles?i_shop=${this.$store.state.user.shopinfo?.i_shop}&f_gubun=1`);
+                this.shopinfofileadds = await this.$axios.patch(`/api/shopinfo/attfiles?i_shop=${this.$store.state.user.shopinfo?.i_shop}&f_gubun=2`);
                 await this.checkShopInfo();
                 this.istab2 = await this.isShopinfochk()
                 this.$toast.info(`개인정보 동의 하였습니다.`);                            
@@ -135,13 +156,13 @@ export default {
         },
         async save3(form) {
             await this.$axios.patch(`/api/shopinfo/attfiles/upload`, form);
-            this.shioinfofiles = await this.$axios.patch(`/api/shopinfo/attfiles?f_gubun=1`);
+            this.shioinfofiles = await this.$axios.patch(`/api/shopinfo/attfiles?i_shop=${this.$store.state.user.shopinfo?.i_shop}&f_gubun=1`);
             this.$toast.info(`스마트공방 신청 저장 하였습니다.`);  
             this.inputFileChk();
         },
         async save4(form) {
             await this.$axios.patch(`/api/shopinfo/attfiles/upload`, form);
-            this.shopinfofileadds = await this.$axios.patch(`/api/shopinfo/attfiles?f_gubun=2`);
+            this.shopinfofileadds = await this.$axios.patch(`/api/shopinfo/attfiles?i_shop=${this.$store.state.user.shopinfo?.i_shop}&f_gubun=2`);
             this.$toast.info(`회사 추가 정보 저장 하였습니다.`);  
         },
 
@@ -150,43 +171,4 @@ export default {
 </script>
 
 <style>
-.v-data-table > .v-data-table__wrapper > table > tbody > tr > th, .v-data-table > .v-data-table__wrapper > table > thead > tr > th, .v-data-table > .v-data-table__wrapper > table > tfoot > tr > th 
-{
-    font-size: 0.7rem;    
-    height: 35px;    
-}
-.v-data-table > .v-data-table__wrapper > table > tbody > tr > td, .v-data-table > .v-data-table__wrapper > table > thead > tr > td, .v-data-table > .v-data-table__wrapper > table > tfoot > tr > td {
-  font-size: 0.35rem;
-  height: 26px; 
-}
-table.nodoc {
-  border-collapse: collapse;
-  text-align: left;
-  line-height: 1;
-  border-top: 1px solid #ccc;
-  border-left: 3px solid #369;
-  margin : 20px 10px;
-  font-size: 0.40rem;
-}
-table.nodoc td {
-  font-weight: bold;
-  vertical-align: top;
-  color: white;
-  background: #153d73; 
-  border-right: 1px solid #ccc;
-  border-bottom: 1px solid #ccc;
-}
-
-.mytable table th {
-    background-color: lightgoldenrodyellow;
-    border-bottom: none !important;
- }
- .mytableTd table td {
-    /* color: blue; */
-    text-align: center;
-    border-bottom: none !important;
- }
-.my-underline {
-    text-decoration-line: underline;
-}
 </style>

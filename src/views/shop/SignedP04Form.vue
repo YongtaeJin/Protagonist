@@ -6,17 +6,19 @@
       <v-data-table :headers="headers" :items="form" item-key="n_filename"
         :expanded.sync="expanded"
         :single-expand="singleExpand"
-        class="mytable"
+        :height="iframeHeight" :max-height="500"
+        hide-default-footer :items-per-page="-1" 
+        class="elevation-1 text-no-wrap"
       >
         <template v-slot:item="{ item, expand, isExpanded }">        
-          <tr >            
+          <tr :class="{ 'row_select': item === selected }" class="center-align" @click="selectItem(item)">
             <td align=center :class="{red2: item.f_yn==1, green2: item.f_yn == 0}">{{f_ynchk(item.f_yn)}} </td>
             <td align=center>
               <v-btn v-if="item.t_sample" small fab  @click="downLoad(item)">
                 <v-icon>mdi-note</v-icon>
               </v-btn>
             </td>
-            <td> {{ item.n_filename }} <v-icon v-if="item.t_remark" @click="expand(!isExpanded)">mdi-help-circle-outline</v-icon></td> 
+            <td align=left> {{ item.n_filename }} <v-icon v-if="item.t_remark" @click="expand(!isExpanded)">mdi-help-circle-outline</v-icon></td> 
             <td align=center :class="{red2: item.f_noact=='N', green2: item.f_noact == 'Y'}"> {{ f_noact(item.f_noact) }} </td>
             <td>
               <div class="d-flex align-center">
@@ -25,7 +27,7 @@
             </td>
             <td align=center width="50px">                 
                 <v-file-input  v-model="item.n_file" :multiple="false"
-                  @change="getFilename($event, item)"
+                  @change="getFilename($event, item)" dense hide-input
                   color="primary accent-4" hide-details prepend-icon="mdi-file-upload" />
             </td> 
              <td align=center>
@@ -63,11 +65,12 @@ export default {
       type: Array,
       default: null,
     },
+    iframeHeight: { type: Number, default: 500 },
   },
   data() {
     return {        
       valid: true,
-      expanded: [],
+      expanded: [], selected: [],
       singleExpand: true,
       form: {
         i_shop: null,
@@ -86,17 +89,14 @@ export default {
       },
       
       headers: [
-        { text: '신청번호',  value: 'i_shop', sortable: false, align:' d-none' },
-        { text: '파일순번', value: 'i_ser', sortable: false, align:' d-none' },
-        { text: '필수여부', value: 'f_yn', sortable: false, width: "100px", fixed: true, align:'center'},
+        { text: '필수', value: 'f_yn', sortable: false, width: "60px", fixed: true, align:'center'},
         { text: '양식', value: 'f_sample', sortable: false, width: "60px", fixed: true, align:'center'},
-        { text: '첨부서류', value: 'n_filename', sortable: false, width: "200px" },
-        { text: '신청no', value: 'i_no', sortable: false, align:' d-none' },
+        { text: '첨부서류', value: 'n_filename', sortable: false, align:'left', width: "200px" },
         { text: '확인', value: 'f_noact', sortable: false, align:'center', width: "55px"},
-        { text: '파일명', value: 'n_file2', sortable: false, },
-        { text: 'UP', value: 'n_file', sortable: false, width: "1%" },
-        { text: '삭제', value: 'f_del', sortable: false, width: "50px" },
-        { text: 'DOWN', value: 't_att', sortable: false, width: "50px" },
+        { text: '파일명', value: 'n_file2', sortable: false, align:'center', },
+        { text: 'UP', value: 'n_file', sortable: false, align:'center', width: "50px" },
+        { text: '삭제', value: 'f_del', sortable: false, align:'center', width: "50px" },
+        { text: 'DOWN', value: 't_att', sortable: false, align:'center',  width: "50px" },
       ],
       isSelecting: false,
       selectedFile: null,
@@ -124,6 +124,10 @@ export default {
     },
     f_noact(data) {
       return data == 'I' ? '○' : (data == 'Y') ? '●' : (data == 'N') ? '●' : (data == 'R') ? '○'  : '';
+    },
+    selectItem(item) {
+      if (this.selected == item) return;
+      this.selected = item;
     },
     async save() {     
       // 한번에 저장 하기 위해 아래 와 같이 전달 해야 함...  (첨부파일 동시 Upload 문제 때문에 주석 처리)
@@ -217,16 +221,5 @@ export default {
 }
 </script>
 <style>
-.red2 {
-  font-size: 30;
-  color: red;
-}
-.green2 {
-  font-size: 10;
-  color: green;
-}
-.blue2 {
-  color: blue;
-}
 
 </style>

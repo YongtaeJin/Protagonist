@@ -6,14 +6,14 @@
             <v-btn color="primary"  @click="fetchData">조회</v-btn>
         </v-toolbar>
         
-        <v-data-table :headers="headers" class="mytable"
-            :items="items" :items-per-page="20"  :footer-props="{'items-per-page-options': [10, 20, 30, 40, 50, 100, -1]}" >
+        <v-data-table :headers="headers" :height=iframeHeight hide-default-footer :items-per-page="-1" 
+            :items="items" single-select  item-key="mb_id" >
             <template v-slot:item="{ item }">
-                <tr>
+                <tr :class="{ 'row_select': item === selected}" @click="selectItem(item)" class="center-align" >
                     <td>{{ item.mb_id }}</td>
                     <td>{{ item.mb_name }}</td>
-                    <td>{{ item.mb_email }}</td>
-                    <td  @dblclick="levleChange(item)"><u>{{ item.mb_level }}</u></td>
+                    <td align="left">{{ item.mb_email }}</td>
+                    <td @dblclick="levleChange(item)"><u>{{ item.mb_level }}</u></td>
                     <td>{{ item.chkpw }}</td>
                     <td @dblclick="use_delete(item)"><u>삭제</u> </td>
                 </tr>
@@ -32,36 +32,49 @@ export default {
 	title : "사용자정보",
     data() {
         return {
+            iframeHeight: 500, // 초기 높이 설정 (원하는 높이로 초기화)
             headers: [
-                { text: 'ID',  value: 'mb_id', sortable: true},
-                { text: '이름',  value: 'mb_name', sortable: true},
-                // { text: '연락처',  value: 'mb_phone', sortable: false},
-                { text: 'email',  value: 'mb_email', sortable: true},
-                { text: '등급',  value: 'mb_level', sortable: true},
-                { text: '비빌먼호',  value: 'chkpw', sortable: false},
-                { text: '사용자삭제', value: 'f_del', sortable: false},
-                // { text: '업체명',  value: 'mb_login_at', sortable: false},
+                { text: 'ID',  value: 'mb_id', sortable: false, align:'center', width:"20%"},
+                { text: '이름',  value: 'mb_name', sortable: false, align:'center', width:"25%"},
+                { text: 'email',  value: 'mb_email', sortable: false, align:'center', width:"25%"},
+                { text: '등급',  value: 'mb_level', sortable: false, align:'center', width:"10%"},
+                { text: '비빌먼호',  value: 'chkpw', sortable: false, align:'center', width:"10%"},
+                { text: '사용자삭제', value: 'f_del', sortable: false, align:'center', width:"10%"},
+                
             ],
-            items: [],
+            items: [], selected: [],
             f_serarch: "",
         }
     },
-    
+    beforeCreate() {
+    },
     created() {
         this.fetchData() ;
     },
     mounted() {
+        // 창 크기가 변경될 때마다 iframe의 높이를 조정
+        window.addEventListener('resize', this.adjustIframeHeight);
+        this.adjustIframeHeight(); // 초기 조정 
         window.addEventListener('beforeunload', this.leave)
     },
     
     beforeUnmount() {
         window.removeEventListener('beforeunload', this.leave)
     },
+    beforeDestroy() {
+        // 컴포넌트가 파기될 때 리스너 제거
+        window.removeEventListener('resize', this.adjustIframeHeight);
+    },
     methods: {
         leave(event) {
 		    event.preventDefault();
 		    event.returnValue = '';
 	    },
+        adjustIframeHeight() {
+        // 브라우저 창의 높이를 iframe의 높이로 설정
+            const windowHeight = window.innerHeight;
+            this.iframeHeight = windowHeight - 212;           
+        },
         async fetchData(){
             this.items = await this.$axios.get(`/api/shopinfo/getShopUserList?f_serarch=${this.f_serarch}`);
         },
@@ -87,6 +100,11 @@ export default {
                     }
                 }
             }
+        },
+        selectItem(item) {
+            if (this.selected == item) return;
+            this.selected = item;
+
         },
     }
 }

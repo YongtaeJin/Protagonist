@@ -1,23 +1,30 @@
 <template>
     <v-container fluid>
-    <v-toolbar>
+    <v-toolbar background-color="primary" dark>
         <v-toolbar-title>협약서관리</v-toolbar-title>
+        <v-col sm=2 md=2>
+            <v-select @input="fetchData" v-model="selectShop" 
+                :items="shopList" item-text="n_shop" item-value="i_shop" 
+                class="my-text-field no-padding" dense style="font-size: 0.8rem;"  >
+            </v-select>
+        </v-col>
         <v-spacer/>
-        <v-text-field label="업체명 : " v-model="chkf_serarch" hide-details  single-lin  />
-        
-        <v-radio-group inline  label="협약서 :" v-model="chkf_arfe" row hide-details class="small-radio no-space"   >
-            <v-radio label="전체" value="%" />
-            <v-radio label="완료" value="Y" />
-            <v-radio label="미완료" value="N" />
-        </v-radio-group>
+        <v-col sm=2 md=2>
+            <v-text-field label="업체명 : " v-model="chkf_serarch" hide-details  single-lin  />
+        </v-col>
+        <v-col sm=3 md=3>
+            <v-radio-group inline  label="협약서 :" v-model="chkf_arfe" row hide-details class="small-radio no-space"   >
+                <v-radio label="전체" value="%" />
+                <v-radio label="완료" value="Y" />
+                <v-radio label="미완료" value="N" />
+            </v-radio-group>
+        </v-col>
         <v-btn color="primary"  @click="fetchData">조회</v-btn>
     </v-toolbar>
 
-    <v-data-table :headers="headers"  :items="itemArgee" :items-per-page="20"  :footer-props="{'items-per-page-options': [10, 20, 30, 40, 50, 100, -1]}" 
-            
-            class="elevation-1 mytable mytableTd">
+    <v-data-table :headers="headers"  :items="itemArgee" :items-per-page="-1" :height="iframeHeight" hide-default-footer single-select>
         <template v-slot:item="{ item }">            
-            <tr >
+            <tr :class="{ 'row_select': item === selected}" @click="selectItem(item)" class="center-align" >
                 <td @dblclick="showRowInfo(item)"><u>{{ item.n_company }}</u></td>
                 <td v-if="item.rnum>=1" align=center :class="{greencol: item.t1}"> {{datachk(item.t1)}}</td>
                 <td v-if="item.rnum>=2" align=center :class="{greencol: item.t2}"> {{datachk(item.t2)}}</td>
@@ -74,7 +81,9 @@ export default {
     name :"ShopArgeeMag",
 	title : "사업협약서관리",
     data() {
-        return {            
+        return {
+            iframeHeight: 500, // 초기 높이 설정 (원하는 높이로 초기화)
+            itemInputs: [], selected:[],
             headers: [],
             itemArgee: [],
             chkf_arfe : "%",
@@ -95,11 +104,18 @@ export default {
         this.init() ;
     },
     mounted() {
+        // 창 크기가 변경될 때마다 iframe의 높이를 조정
+        window.addEventListener('resize', this.adjustIframeHeight);
+        this.adjustIframeHeight(); // 초기 조정 
         window.addEventListener('beforeunload', this.leave)
     },
     
     beforeUnmount() {
         window.removeEventListener('beforeunload', this.leave)
+    },
+    beforeDestroy() {
+        // 컴포넌트가 파기될 때 리스너 제거
+        window.removeEventListener('resize', this.adjustIframeHeight);
     },
     methods: {
         ...mapActions("shop", ["shopEmailSend"]),
@@ -120,9 +136,18 @@ export default {
         argeechk(data) {
             return data=="Y" ? "확인" : "미확인";
         },
+        adjustIframeHeight() {
+        // 브라우저 창의 높이를 iframe의 높이로 설정
+            const windowHeight = window.innerHeight;
+            this.iframeHeight = windowHeight - 219;           
+        },
         async init() {
-            this.rnum = 1;
-            this.fetchData();
+            this.rnum = 1;            
+            this.shopList = await this.$axios.get("/api/shopinfo/getShopList");
+            if (this.shopList.length)  {
+                this.selectShop = this.shopList[0].i_shop;                
+                await this.fetchData()
+            }
             
         },
         async fetchData() {            
@@ -133,9 +158,9 @@ export default {
             head.sortable = false;
             head.align = 'center';
             this.headers.push( { ...head });
-            this.itemArgee = await this.$axios.get(`/api/shopinfo/getShopArgeeMag?i_shop=23-001&f_serarch=${this.chkf_serarch}&chkf_arfe=${this.chkf_arfe}`);
+            this.itemArgee = await this.$axios.get(`/api/shopinfo/getShopArgeeMag?i_shop=${this.selectShop}&f_serarch=${this.chkf_serarch}&chkf_arfe=${this.chkf_arfe}`);
             
-            if (this.itemArgee) {
+            if (this.itemArgee.length) {
                 this.rnum = this.itemArgee[0].rnum;              
                 for(let i=0; i<Object.keys(this.itemArgee[0]).length; i++){
                     let name = Object.keys(this.itemArgee[0])[i];
@@ -158,6 +183,10 @@ export default {
                 this.headers.push( { ...head });
             }
             //  this.$refs.ez_wait.close();
+        },
+        selectItem(item) {
+            if (this.selected == item) return;
+            this.selected = item;
         },
         async f_argeechk(item) {
             const res = await this.$ezNotify.confirm("처리 하시겠습니까  ?", "협약서");

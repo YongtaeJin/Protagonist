@@ -1,30 +1,42 @@
 <template>
     <v-container fluid>
-    <v-toolbar>
+    <v-toolbar background-color="primary" dark>        
         <v-toolbar-title>사업신청관리</v-toolbar-title>
+        <v-col sm=2 md=2>
+            <v-select @input="fetchData" v-model="selectShop" 
+                :items="shopList" item-text="n_shop" item-value="i_shop" 
+                class="my-text-field no-padding" dense style="font-size: 0.8rem;"  >
+            </v-select>
+        </v-col>
         <v-spacer/>
-        <v-text-field label="업체명 : " v-model="chkf_serarch" hide-details  single-lin  />
+        <v-col sm=2 md=2>
+            <v-text-field label="업체명 : " v-model="chkf_serarch" hide-details  single-lin  />
+        </v-col>
+        <v-col sm=2 md=2>
+            <v-radio-group inline  label="공방서류:" v-model="chkf_dochk" row hide-details class="small-radio no-space"   >
+                <v-radio label="전체" value="%" />
+                <v-radio label="완료" value="Y" />
+                <v-radio label="미완료" value="N" />
+            </v-radio-group>        
+        </v-col>
+        <v-col sm=2 md=2>
+           
+            
+            <v-radio-group inline  label="e나라도움:" v-model="chkf_enara" row hide-details class="small-radio no-space"   >
+                <v-radio label="전체" value="%" />
+                <v-radio label="완료" value="Y" />
+                <v-radio label="미완료" value="N" />
+            </v-radio-group> 
+        </v-col>
+            <v-btn color="primary"  @click="fetchData">조회</v-btn>
         
-        <v-radio-group inline  label="공방서류:" v-model="chkf_dochk" row hide-details class="small-radio no-space"   >
-            <v-radio label="전체" value="%" />
-            <v-radio label="완료" value="Y" />
-            <v-radio label="미완료" value="N" />
-        </v-radio-group>
-        
-        <v-radio-group inline  label="e나라도움:" v-model="chkf_enara" row hide-details class="small-radio no-space"   >
-            <v-radio label="전체" value="%" />
-            <v-radio label="완료" value="Y" />
-            <v-radio label="미완료" value="N" />
-        </v-radio-group>
-        <v-btn color="primary"  @click="fetchData">조회</v-btn>
     </v-toolbar>
     <v-row>
         <v-col sm=6>
-            <v-data-table height="500" max-height="800" 
-                :headers="headers" :items="itemInputs" :items-per-page="20"  :footer-props="{'items-per-page-options': [10, 20, 30, 40, 50, 100, -1]}" 
-                class="elevation-5 mytable" >
+            <v-data-table :height=iframeHeight hide-default-footer :items-per-page="-1" 
+                :headers="headers" :items="itemInputs" single-select  item-key="i_ser" >
                 <template v-slot:item="{ item }">
-                    <tr align=center >
+                    <tr :class="{ 'row_select': item === selected}" @click="selectItem(item)" class="center-align" >
                         <td @click="clickItem(item, tabs)" align=left> {{ item.n_company }} </td>
                         <td @click="clickItem(item, tabs)" :class="{greencol: item.f_persioninfo=='1', redcol: item.f_persioninfo != '1'}"> {{ datachk(item.f_persioninfo) }} </td>
                         <td @click="clickItem(item, 0)" :class="{greencol: item.chk1=='Y', redcol: item.chk1 != 'Y'}"> {{ datachk(item.chk1) }} </td>
@@ -87,7 +99,6 @@
 import { deepCopy } from "../../../util/lib";
 import { mapActions, mapGetters, mapMutations } from "vuex";
 import Shopinputmag03Form from './Shopinputmag03Form.vue';
-import { date } from '../../../util/validateRules';
 import TiptabMail from '../../components/tiptab/TiptabMail.vue';
 import EzDialog2 from '../../components/etc/EzDialog2.vue';
 
@@ -96,11 +107,13 @@ export default {
     name :"ShopInputMag",
 	title : "사업신청관리",
     data() {
-        return {            
+        return {
+            iframeHeight: 500, // 초기 높이 설정 (원하는 높이로 초기화)
             tabs: parseInt(this.$route.query.tabs) || 0 ,
             isLoading: false,
+            selectShop: null, shopList: [],
             headers: [
-                { text: '업체명',  value: 'n_company', sortable: false},
+                { text: '업체명',  value: 'n_company', sortable: false, align:'center',},
                 { text: '정보동의', value: 'f_persioninfo', sortable: false, align:'center', width: "80px"},
                 { text: '회사정보', value: 'chk1', sortable: false, align:'center', width: "80px"}, 
                 { text: '신청서류', value: 'chk2', sortable: false, align:'center', width: "80px"},
@@ -108,7 +121,7 @@ export default {
                 { text: '공방서류', value: 'f_dochk', sortable: false, align:'center', width: "80px"},  
                 { text: 'e나라도움등록', value: 'f_enarachk', sortable: false, align:'center', width: "80px"},
             ],
-            itemInputs: [],
+            itemInputs: [], selected:[],
             shopInput: [],
             fileAdds: [],
             fileAddsB: [],
@@ -154,7 +167,11 @@ export default {
             mailBody: "",
         }
     },
-    mounted() {     
+    mounted() {
+        // 창 크기가 변경될 때마다 iframe의 높이를 조정
+        window.addEventListener('resize', this.adjustIframeHeight);
+        this.adjustIframeHeight(); // 초기 조정 
+        this.init();
         window.addEventListener('beforeunload', this.leave);
     },
     
@@ -163,7 +180,11 @@ export default {
     },
 
     created() {
-        this.fetchData() ;
+        // this.fetchData() ;
+    },
+    beforeDestroy() {
+        // 컴포넌트가 파기될 때 리스너 제거
+        window.removeEventListener('resize', this.adjustIframeHeight);
     },
     watch : {
         
@@ -175,6 +196,11 @@ export default {
 		    event.preventDefault();
 		    event.returnValue = '';
 	    },
+        adjustIframeHeight() {
+        // 브라우저 창의 높이를 iframe의 높이로 설정
+            const windowHeight = window.innerHeight;
+            this.iframeHeight = windowHeight - 212;           
+        },
         datachk(data) {
             let val = "";
             if (data == "1" || data == "Y" ) { 
@@ -195,13 +221,43 @@ export default {
             }
             return  val;
         },
+        selectItem(item) {
+            if(this.selected == item) return;
+            this.selected = item;
+        },  
         async clickRow(item) {
 
         },
+        async init() {
+            this.shopList = await this.$axios.get("/api/shopinfo/getShopList");
+            if (this.shopList.length)  {
+                this.selectShop = this.shopList[0].i_shop;                
+                await this.fetchData()
+            }
+        },
        
         async fetchData() {
+            this.fileAdds.slice(0)
+            this.fileAddsB.slice(0)
+            this.itemInput.n_company = "",
+            this.itemInput.i_regno = "",
+            this.itemInput.n_person = "",
+            this.itemInput.i_presno = "",
+            this.itemInput.t_tel1 = "",
+            this.itemInput.t_tel1 = "",
+            this.itemInput.t_tel2 = "",
+            this.itemInput.i_email = "",
+            this.itemInput.f_saugup = "",
+            this.itemInput.f_run = "",
+            this.itemInput.f_dart = "",
+            this.itemInput.t_enarainfo = "",
+            this.itemInput.t_enarainfopw = "",
+            this.itemInput.i_post = "",
+            this.itemInput.t_addr1 = "",
+            this.itemInput.t_addr2 = "",
+            
             //this.itemInputs = await this.$axios.get(`/api/shopinfo/getShopInputMag`);
-            this.itemInputs = await this.$axios.get(`/api/shopinfo/getShopInputMag?i_shop=23-001&chkf_serarch=${this.chkf_serarch}&chkf_dochk=${this.chkf_dochk}&chkf_enara=${this.chkf_enara}`);
+            this.itemInputs = await this.$axios.get(`/api/shopinfo/getShopInputMag?i_shop=${this.selectShop}&chkf_serarch=${this.chkf_serarch}&chkf_dochk=${this.chkf_dochk}&chkf_enara=${this.chkf_enara}`);
             // this.itemInputs = await this.$axios.get(`/api/shopinfo/getShopInputMag?i_shop=23-001&chkf_serarch=${this.chkf_serarch}&chkf_dochk=${ this.chkf_dochk}&chkf_enara=${this.chkf_enara}`);
         },
          async clickItem(item, col) {
@@ -322,69 +378,5 @@ export default {
 </script>
 
 <style>
-
-.v-data-table > .v-data-table__wrapper > table > tbody > tr > th, .v-data-table > .v-data-table__wrapper > table > thead > tr > th, .v-data-table > .v-data-table__wrapper > table > tfoot > tr > th 
-{
-    font-size: 0.7rem;    
-    height: 35px;        
-}
-.v-data-table > .v-data-table__wrapper > table > tbody > tr > td, .v-data-table > .v-data-table__wrapper > table > thead > tr > td, .v-data-table > .v-data-table__wrapper > table > tfoot > tr > td {
-  font-size: 0.35rem;
-  height: 26px; 
-}
-
-.redcol {  
-  color: red;
-}
-.greencol {  
-  color: green;
-}
-.bluecol {
-  color: blue;
-}
-
-table.type03 {
-  border-collapse: collapse;
-  text-align: left;
-  line-height: 1;
-  border-top: 1px solid #ccc;
-  border-left: 3px solid #369;
-  margin : 20px 10px;
-  font-size: 0.40rem;
-}
-table.type03 th {
-  width: 160px;
-  padding: 10px;
-  font-weight: bold;
-  vertical-align: top;
-  color: white;
-  background: #153d73; 
-  border-right: 1px solid #ccc;
-  border-bottom: 1px solid #ccc;
-
-}
-table.type03 td {
-  width: 349px;
-  padding: 10px;
-  vertical-align: top;
-  border-right: 1px solid #ccc;
-  border-bottom: 1px solid #ccc;
-}
-
-.small-radio i {
-  font-size: 0.5rem;
-}
-.small-radio label {    
-  font-size: 0.35rem;
-  padding-left: 0px;
-  margin-left: -4px;
-}
-.small-radio .v-radio {
-  padding: 0px;
-}
-.small-radio [class*="__ripple"] {
-  left: 0;
-}
-
 
 </style>
