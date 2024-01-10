@@ -440,8 +440,8 @@ const shopinfoModel = {
 	},
 	async getShopInputMag2(req) {
 		const { i_shop, i_no, f_gubun } = req.query;	
-		
-		const sql = "select a.i_shop, a.i_ser, a.f_gubun, a.f_yn, a.n_file n_filename, " +
+		// const sql = "select a.i_shop, a.i_ser, a.f_gubun, a.f_yn, a.n_file n_filename, " +
+		const sql = "select a.i_shop, a.i_ser, a.f_gubun, a.f_yn, a.n_nm n_filename, " +
 					"       c.i_no, b.n_file, b.t_att, b.f_noact " +
 					"  from tb_shopmag_file a " +
 					"       left outer join tb_shopinput c on a.i_shop = c.i_shop and c.i_no = " + i_no +
